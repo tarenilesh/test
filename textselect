@@ -44,3 +44,9 @@ FROM
     WHERE LENGTH(CAST(column_name AS STRING)) <= 255
   ) AS filtered_view
 
+SELECT 
+  CAST(column_name AS STRING) AS string_column,
+  MD5(CAST(column_name AS STRING)) AS column_hash
+FROM 
+  `project.dataset.table`
+
