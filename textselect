@@ -1,0 +1,5 @@
+SELECT 
+  column_name,
+  MD5(CAST(COALESCE(LEFT(column_name, 65535), '') AS STRING)) AS column_hash
+FROM 
+  `project.dataset.table`
