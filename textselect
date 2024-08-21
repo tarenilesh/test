@@ -34,4 +34,13 @@ FROM
   `project.dataset.table`
 LIMIT 1000
 
+SELECT 
+  column_name,
+  MD5(CAST(COALESCE(column_name, '') AS STRING)) AS column_hash
+FROM 
+  (
+    SELECT column_name
+    FROM `project.dataset.view`
+    WHERE LENGTH(CAST(column_name AS STRING)) <= 255
+  ) AS filtered_view
 
