@@ -11,3 +11,27 @@ SELECT
 FROM 
   `project.dataset.table`
 
+
+SELECT 
+  column_name,
+  MD5(SUBSTRING(CAST(COALESCE(column_name, '') AS STRING), 1, 255)) AS column_hash
+FROM 
+  `project.dataset.table`
+
+
+
+SELECT 
+  column_name,
+  MD5(CAST(COALESCE(CAST(column_name AS STRING), '') AS STRING)) AS column_hash
+FROM 
+  `project.dataset.table`
+
+
+SELECT 
+  column_name,
+  MD5(CAST(COALESCE(column_name, '') AS STRING)) AS column_hash
+FROM 
+  `project.dataset.table`
+LIMIT 1000
+
+
