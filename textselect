@@ -57,4 +57,9 @@ SELECT
 FROM 
   `project.dataset.view`
 
+SELECT 
+  TRIM(column_name) AS trimmed_column_name,
+  MD5(CAST(TRIM(COALESCE(column_name, '')) AS STRING)) AS column_hash
+FROM 
+  `project.dataset.table`
 
