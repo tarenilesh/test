@@ -68,3 +68,16 @@
       until: job_status.finished
       retries: 5
       delay: 10
+
+- name: Display Windows Pagefile Settings
+  hosts: windows
+  gather_facts: no
+  tasks:
+
+    - name: Get Windows pagefile settings
+      win_shell: Get-WmiObject Win32_PageFileSetting | Select-Object Name, InitialSize, MaximumSize
+      register: pagefile_info
+
+    - name: Display pagefile settings
+      debug:
+        var: pagefile_info.stdout_lines
