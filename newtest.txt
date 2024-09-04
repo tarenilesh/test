@@ -169,3 +169,26 @@ gcloud compute instances create my-instance \
     --image-family=debian-10 \
     --image-project=debian-cloud
 
+---
+- name: Run multi-line PowerShell script on Windows
+  hosts: windows
+  gather_facts: no
+  tasks:
+    - name: Execute multi-line PowerShell script
+      win_powershell:
+        script: |
+          # Set some variables
+          $serviceName = 'wuauserv'
+          
+          # Check the status of the Windows Update service
+          $service = Get-Service -Name $serviceName
+          
+          if ($service.Status -eq 'Running') {
+              # Stop the service if it is running
+              Stop-Service -Name $serviceName -Force
+              Write-Output "$serviceName has been stopped."
+          } else {
+              Write-Output "$serviceName is not running."
+          }
+          
+          # Additional PowerShell logic can be added here
