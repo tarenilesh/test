@@ -23,7 +23,7 @@
       win_reboot:
         reboot_timeout: 600
 ---
-- name: Copy files from GCS bucket
+- name: Copy files from GCS bucket using gsutil
   hosts: all
   gather_facts: no
   vars:
@@ -36,24 +36,34 @@
       - "file4.txt"
   tasks:
 
+    - name: Install gsutil (if not already installed)
+      ansible.builtin.shell: |
+        if ! command -v gsutil &> /dev/null; then
+          curl https://sdk.cloud.google.com | bash
+          exec -l $SHELL
+          gcloud init
+        fi
+      args:
+        warn: false
+
     - name: Create destination directory if it doesn't exist
       ansible.builtin.file:
         path: "{{ dest_dir }}"
         state: directory
 
-    - name: Download files from GCS bucket in parallel
+    - name: Download files from GCS bucket in parallel using gsutil
       ansible.builtin.shell: |
-        gcloud storage cp {{ gcs_bucket }}/{{ item }} {{ dest_dir }}/{{ item }}
+        gsutil -m cp {{ gcs_bucket }}/{{ item }} {{ dest_dir }}/{{ item }}
       loop: "{{ file_list }}"
       async: 45  # This allows the task to run for up to 45 seconds before timing out
       poll: 0    # Set poll to 0 to run the tasks asynchronously
       ignore_errors: yes  # Avoids failing the entire playbook if one file fails
-      register: gcs_copy_jobs
+      register: gsutil_copy_jobs
 
     - name: Wait for file transfers to complete
       ansible.builtin.async_status:
         jid: "{{ item.ansible_job_id }}"
-      loop: "{{ gcs_copy_jobs.results }}"
+      loop: "{{ gsutil_copy_jobs.results }}"
       register: job_status
       until: job_status.finished
       retries: 5
