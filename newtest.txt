@@ -131,3 +131,21 @@
           - http2_https_check.value == 0
         fail_msg: "HTTP/2 is still enabled for HTTPS."
         success_msg: "HTTP/2 is disabled for HTTPS."
+---
+- name: Reboot Windows VM and wait until it comes back up
+  hosts: windows_vms
+  gather_facts: no
+  tasks:
+    - name: Initiate Windows VM reboot
+      win_reboot:
+        timeout: 1800  # Timeout of 30 minutes for the reboot to complete
+
+    - name: Wait for the VM to be online (via WinRM)
+      wait_for:
+        port: 5986    # WinRM HTTPS default port (5985 for HTTP)
+        host: "{{ ansible_host }}"
+        delay: 30     # Wait for 30 seconds before checking again
+        timeout: 600  # Wait for up to 10 minutes for the VM to be ready
+
+
+
