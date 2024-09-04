@@ -148,4 +148,8 @@
         timeout: 600  # Wait for up to 10 minutes for the VM to be ready
 
 
-
+        stage('Delay') {
+            steps {
+                sleep time: 10, unit: 'SECONDS'  // Add a 10-second delay
+            }
+        }
