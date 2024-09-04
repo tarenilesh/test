@@ -153,3 +153,19 @@
                 sleep time: 10, unit: 'SECONDS'  // Add a 10-second delay
             }
         }
+
+
+#!/bin/bash
+
+# Set default value for DISK_TYPE if not provided
+DISK_TYPE=${DISK_TYPE:-pd-standard}
+
+# Create the Compute Engine instance
+gcloud compute instances create my-instance \
+    --zone=us-central1-a \
+    --machine-type=n1-standard-1 \
+    --boot-disk-type=$DISK_TYPE \
+    --boot-disk-size=100GB \
+    --image-family=debian-10 \
+    --image-project=debian-cloud
+
