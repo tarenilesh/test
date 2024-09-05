@@ -192,3 +192,17 @@ gcloud compute instances create my-instance \
           }
           
           # Additional PowerShell logic can be added here
+---
+- name: Display registry details on Windows
+  hosts: windows
+  gather_facts: no
+  tasks:
+    - name: Get registry details
+      win_reg_stat:
+        path: HKLM:\System\CurrentControlSet\Services\HTTP\Parameters
+        name: EnableHttp2
+      register: reg_details
+
+    - name: Display registry value
+      debug:
+        var: reg_details
