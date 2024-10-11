@@ -1,0 +1,75 @@
+To re-add a deleted column from a historical BigQuery table, you can query the table as it existed in the past using time travel and either create a new table with the recovered column or update the existing table. Here's how to do it:
+
+Step-by-Step Process
+1. Query the Historical Table
+You can query the table at a specific point in time when the column still existed using the FOR SYSTEM TIME AS OF clause.
+
+Example:
+
+sql
+Copy code
+SELECT *
+FROM `project_id.dataset_id.table_id` 
+FOR SYSTEM TIME AS OF TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 2 DAY);
+This will return the table as it was 2 days ago. You should adjust the INTERVAL to the appropriate time period when the column was still present.
+
+2. Create a New Table with the Recovered Column
+Once you’ve queried the historical version of the table with the missing column, you can save the results into a new table:
+
+sql
+Copy code
+CREATE OR REPLACE TABLE `project_id.dataset_id.new_table_id` AS
+SELECT *
+FROM `project_id.dataset_id.table_id`
+FOR SYSTEM TIME AS OF TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 2 DAY);
+This will create (or replace, if it already exists) a new table that contains all the columns, including the one that was deleted.
+
+3. Re-add the Deleted Column to the Existing Table
+If you want to update the existing table by adding back the deleted column, follow these steps:
+
+Option 1: Merge Data into the Existing Table (Recommended)
+You can merge the recovered data (including the deleted column) into the existing table while keeping the current data.
+
+First, ensure your existing table has the same schema as the historical version, including the deleted column. Then, use the MERGE statement to update the existing table with data from the historical version:
+
+sql
+Copy code
+MERGE `project_id.dataset_id.current_table_id` AS target
+USING (
+  SELECT *
+  FROM `project_id.dataset_id.table_id`
+  FOR SYSTEM TIME AS OF TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 2 DAY)
+) AS source
+ON target.primary_key_column = source.primary_key_column
+WHEN MATCHED THEN 
+  UPDATE SET target.deleted_column = source.deleted_column
+WHEN NOT MATCHED THEN 
+  INSERT ROW;
+primary_key_column should be the key or unique identifier column for the table.
+This statement will update the existing table by adding the deleted column values back for matching rows.
+Option 2: Add the Column Manually and Populate Data
+Add the Deleted Column to the existing table schema: You can add a new column using the ALTER TABLE command:
+
+sql
+Copy code
+ALTER TABLE `project_id.dataset_id.table_id`
+ADD COLUMN deleted_column STRING;  -- Adjust the data type
+Populate the Data for the Deleted Column: After adding the column, you can populate it using an UPDATE statement:
+
+sql
+Copy code
+UPDATE `project_id.dataset_id.table_id` AS current
+SET current.deleted_column = historical.deleted_column
+FROM (
+  SELECT primary_key_column, deleted_column
+  FROM `project_id.dataset_id.table_id`
+  FOR SYSTEM TIME AS OF TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 2 DAY)
+) AS historical
+WHERE current.primary_key_column = historical.primary_key_column;
+This will restore the values for the deleted column from the historical table version.
+
+Notes:
+Schema Change Considerations: Adding columns is generally allowed in BigQuery, but removing or renaming columns isn't. Make sure the schema of the historical table matches the current table.
+Permissions: Ensure you have sufficient permissions to alter tables and query historical versions.
+Data Types: Ensure that the data type of the restored column matches the original data type before it was deleted.
+By following these steps, you can recover and re-add the deleted column to your existing table or create a new table with the column intact.
