@@ -84,3 +84,6 @@ pipeline {
         }
     }
 }
+
+SELECT *
+FROM `project_id.dataset_id.table_id` FOR SYSTEM TIME AS OF TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL n DAY);
