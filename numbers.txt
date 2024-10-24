@@ -90,6 +90,13 @@ For larger-scale automation, consider using Terraform or other GCP automation to
 Let me know if you'd like further details on any step!
 
 
+GRANT USAGE ON SCHEMA my_schema TO editor_user;
+GRANT CREATE ON SCHEMA my_schema TO editor_user;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA my_schema TO editor_user;
+ALTER DEFAULT PRIVILEGES IN SCHEMA my_schema GRANT ALL PRIVILEGES ON TABLES TO editor_user;
+
+
+
 
 
 
