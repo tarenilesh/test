@@ -96,13 +96,14 @@ GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA my_schema TO editor_user;
 ALTER DEFAULT PRIVILEGES IN SCHEMA my_schema GRANT ALL PRIVILEGES ON TABLES TO editor_user;
 
 
+#to list files
+from pathlib import Path
+
+# Specify the folder path
+folder_path = Path(r"C:\path\to\your\folder")
+
+# List all files in the specified folder
+for file in folder_path.iterdir():
+    print(file.name)
 
 
-
-
-
-
-
-
-
-Chat
