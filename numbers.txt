@@ -107,3 +107,18 @@ for file in folder_path.iterdir():
     print(file.name)
 
 
+
+
+
+from pathlib import Path
+from datetime import datetime
+
+# Specify the folder path
+folder_path = Path(r"C:\path\to\your\folder")
+
+# List all files in the specified folder with their last modified date and time
+for file in folder_path.iterdir():
+    if file.is_file():
+        # Get the last modified time of the file
+        modified_time = datetime.fromtimestamp(file.stat().st_mtime)
+        print(f"{file.name} - Last Modified: {modified_time}")
