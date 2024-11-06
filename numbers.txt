@@ -122,6 +122,7 @@ for file in folder_path.iterdir():
         # Get the last modified time of the file
         modified_time = datetime.fromtimestamp(file.stat().st_mtime)
         print(f"{file.name} - Last Modified: {modified_time}")
-
-
+# mysql
+GRANT ALL PRIVILEGES ON my_database.* TO 'user@example.com'@'%';
+FLUSH PRIVILEGES;
 
