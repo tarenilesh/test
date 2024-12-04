@@ -126,3 +126,18 @@ for file in folder_path.iterdir():
 GRANT ALL PRIVILEGES ON my_database.* TO 'user@example.com'@'%';
 FLUSH PRIVILEGES;
 
+# Define the file path
+$filePath = "C:\path\to\your\file.txt"
+
+# Define the text lines to add
+$lines = @(
+    "This is the first line.",
+    "This is the second line.",
+    "This is the third line."
+)
+
+# Create the file and write the lines
+$lines | Out-File -FilePath $filePath -Encoding UTF8
+
+# Confirm the file creation
+Write-Host "File created at $filePath with the specified lines."
