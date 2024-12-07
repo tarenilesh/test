@@ -141,3 +141,60 @@ $lines | Out-File -FilePath $filePath -Encoding UTF8
 
 # Confirm the file creation
 Write-Host "File created at $filePath with the specified lines."
+
+# Define paths
+$venvPath = "path\to\your\venv"   # Replace with the path to your venv
+$scriptPath = "path\to\main.py"   # Replace with the path to your Python script
+$outputFile = "path\to\output.txt" # Replace with the path to save the output
+
+# Activate the virtual environment
+& "$venvPath\Scripts\Activate.ps1"
+
+# Run the Python script and save the output to the file
+Write-Host "Running Python script..."
+python $scriptPath | Out-File -FilePath $outputFile -Encoding utf8
+
+# Check if the script completed successfully
+if ($LASTEXITCODE -eq 0) {
+    Write-Host "Python script completed successfully. Output saved to $outputFile"
+} else {
+    Write-Host "Python script encountered an error. Check the output file for details."
+}
+
+# Deactivate the virtual environment
+& "$venvPath\Scripts\Deactivate.ps1"
+
+Write-Host "Virtual environment deactivated."
+
+
+To reactivate code 
+
+$venvPath = "path\to\your\venv"  # Replace with your venv path
+& "$venvPath\Scripts\Activate.ps1"
+
+# Reapply environment variables if not saved permanently
+$envFile = "path\to\env_vars.txt"  # Replace with your environment variable file path
+Get-Content $envFile | ForEach-Object {
+    $parts = $_ -split "="
+    $envName = $parts[0]
+    $envValue = $parts[1]
+    [Environment]::SetEnvironmentVariable($envName, $envValue, [EnvironmentVariableTarget]::Process)
+}
+
+Write-Host "Virtual environment activated with saved environment variables."
+
+# Run the Python script and save the output to the file
+Write-Host "Running Python script..."
+python $scriptPath | Out-File -FilePath $outputFile -Encoding utf8
+
+# Check if the script completed successfully
+if ($LASTEXITCODE -eq 0) {
+    Write-Host "Python script completed successfully. Output saved to $outputFile"
+} else {
+    Write-Host "Python script encountered an error. Check the output file for details."
+}
+
+# Deactivate the virtual environment
+& "$venvPath\Scripts\Deactivate.ps1"
+
+Write-Host "Virtual environment deactivated."
