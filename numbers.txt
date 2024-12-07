@@ -200,3 +200,7 @@ if ($LASTEXITCODE -eq 0) {
 Write-Host "Virtual environment deactivated."
 
 -Command "& { [System.Environment]::SetEnvironmentVariable('MY_VAR1', 'Hello', 'Process'); [System.Environment]::SetEnvironmentVariable('MY_VAR2', 'World', 'Process'); .\path\to\my_script.ps1 }"
+
+Replace([Script], "{{PLACEHOLDER}}", "DynamicValue")
+
+
