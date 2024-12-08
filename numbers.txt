@@ -274,3 +274,65 @@ Replace([Script], "{{PLACEHOLDER}}", "DynamicValue")
           {{ script_output.stderr }}
           Wait Output:
           {{ wait_output.stdout }}
+
+
+# Set variables
+$sourcePath = "C:\logs"  # Source folder where log files are stored
+$bucketName = "my-log-bucket"  # Replace with your actual GCP bucket name
+$gcpProject = "your-gcp-project-id"  # Replace with your actual GCP project ID
+$dateFolder = (Get-Date -Format "yyyy-MM-dd")  # Folder in GCP bucket to organize logs daily
+$destinationFolder = "gs://$bucketName/$dateFolder"  # Full destination path in GCP bucket
+
+# Ensure gcloud CLI is installed and authenticated
+$gcloudPath = "C:\Program Files\Google\Cloud SDK\google-cloud-sdk\bin\gcloud.cmd"
+
+# Function to check if a file is locked (in use by another process)
+function Test-FileInUse {
+    param ([string]$filePath)
+    try {
+        $stream = [System.IO.File]::Open($filePath, 'Open', 'ReadWrite', 'None')
+        $stream.Close()
+        return $false
+    } catch {
+        return $true
+    }
+}
+
+# Function to copy files to GCP
+function Copy-FilesToGCP {
+    Write-Host "Starting upload to GCP bucket..."
+
+    # Get all log files that are not in use by a process
+    $filesToUpload = Get-ChildItem -Path $sourcePath -File | Where-Object { -not (Test-FileInUse $_.FullName) }
+
+    foreach ($file in $filesToUpload) {
+        $sourceFile = $file.FullName
+        Write-Host "Uploading: $($file.Name)"
+
+        # Upload the file to GCP bucket using gcloud CLI
+        & $gcloudPath storage cp $sourceFile $destinationFolder
+
+        # Check if the file upload was successful
+        if ($LASTEXITCODE -eq 0) {
+            # Delete file after successful upload
+            Remove-Item -Path $sourceFile -Force
+            Write-Host "Uploaded and deleted: $($file.Name)"
+        } else {
+            Write-Host "Failed to upload: $($file.Name)"
+        }
+    }
+
+    Write-Host "Upload process completed."
+}
+
+# Infinite loop to run every 1 hour
+while ($true) {
+    # Ensure the daily folder exists in GCP bucket
+    & $gcloudPath storage cp $null $destinationFolder
+
+    # Perform file copy operation
+    Copy-FilesToGCP
+
+    # Wait for 1 hour before the next run
+    Start-Sleep -Seconds 3600
+}
