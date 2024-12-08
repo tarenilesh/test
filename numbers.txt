@@ -508,8 +508,9 @@ $scriptContent | Out-File -FilePath $scriptPath -Force
 
 # Create a Task Scheduler entry to run the script every hour indefinitely
 $taskAction = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-ExecutionPolicy Bypass -File $scriptPath"
-$taskTrigger = New-ScheduledTaskTrigger -At (Get-Date).AddMinutes(1)  # Starts in 1 minute
+$taskTrigger = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(1)  # Starts in 1 minute
 $taskTrigger.RepetitionInterval = [TimeSpan]::FromHours(1)  # Repeats every hour
+$taskTrigger.RepetitionDuration = [TimeSpan]::MaxValue      # Repeat indefinitely
 
 # Register the task with Task Scheduler
 Register-ScheduledTask -Action $taskAction -Trigger $taskTrigger -TaskName $taskName -Description "Task to copy log files to GCP every hour"
