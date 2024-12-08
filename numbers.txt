@@ -336,3 +336,92 @@ while ($true) {
     # Wait for 1 hour before the next run
     Start-Sleep -Seconds 3600
 }
+
+
+# Define the script path and task name
+$scriptPath = "C:\housekeeping\Copy-LogsToGCP.ps1"
+$taskName = "CopyLogsToGCP"
+
+# Create the housekeeping folder if it does not exist
+$housekeepingFolder = "C:\housekeeping"
+if (-not (Test-Path $housekeepingFolder)) {
+    New-Item -Path $housekeepingFolder -ItemType Directory
+}
+
+# Write the script content to C:\housekeeping\Copy-LogsToGCP.ps1
+$scriptContent = @'
+# Set variables
+$sourcePath = "C:\logs"  # Source folder where log files are stored
+$bucketName = "my-log-bucket"  # Replace with your actual GCP bucket name
+$gcpProject = "your-gcp-project-id"  # Replace with your actual GCP project ID
+$dateFolder = (Get-Date -Format "yyyy-MM-dd")  # Folder in GCP bucket to organize logs daily
+$destinationFolder = "gs://$bucketName/$dateFolder"  # Full destination path in GCP bucket
+
+# Ensure gcloud CLI is installed and authenticated
+$gcloudPath = "C:\Program Files\Google\Cloud SDK\google-cloud-sdk\bin\gcloud.cmd"
+
+# Function to check if a file is locked (in use by another process)
+function Test-FileInUse {
+    param ([string]$filePath)
+    try {
+        $stream = [System.IO.File]::Open($filePath, 'Open', 'ReadWrite', 'None')
+        $stream.Close()
+        return $false
+    } catch {
+        return $true
+    }
+}
+
+# Function to copy files to GCP
+function Copy-FilesToGCP {
+    Write-Host "Starting upload to GCP bucket..."
+
+    # Get all log files that are not in use by a process
+    $filesToUpload = Get-ChildItem -Path $sourcePath -File | Where-Object { -not (Test-FileInUse $_.FullName) }
+
+    foreach ($file in $filesToUpload) {
+        $sourceFile = $file.FullName
+        Write-Host "Uploading: $($file.Name)"
+
+        # Upload the file to GCP bucket using gcloud CLI
+        & $gcloudPath storage cp $sourceFile $destinationFolder
+
+        # Check if the file upload was successful
+        if ($LASTEXITCODE -eq 0) {
+            # Delete file after successful upload
+            Remove-Item -Path $sourceFile -Force
+            Write-Host "Uploaded and deleted: $($file.Name)"
+        } else {
+            Write-Host "Failed to upload: $($file.Name)"
+        }
+    }
+
+    Write-Host "Upload process completed."
+}
+
+# Infinite loop to run every 1 hour
+while ($true) {
+    # Ensure the daily folder exists in GCP bucket
+    & $gcloudPath storage cp $null $destinationFolder
+
+    # Perform file copy operation
+    Copy-FilesToGCP
+
+    # Wait for 1 hour before the next run
+    Start-Sleep -Seconds 3600
+}
+'@
+
+# Save the script to the specified path
+$scriptContent | Out-File -FilePath $scriptPath -Force
+
+# Create a Task Scheduler entry to run the script every hour
+$taskAction = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-ExecutionPolicy Bypass -File $scriptPath"
+$taskTrigger = New-ScheduledTaskTrigger -Daily -At "12:00AM"
+$taskTrigger.RepetitionInterval = [TimeSpan]::FromHours(1)  # Repeats every hour
+$taskTrigger.RepetitionDuration = [TimeSpan]::FromDays(1)  # Repeat for 24 hours
+
+# Register the task with Task Scheduler
+Register-ScheduledTask -Action $taskAction -Trigger $taskTrigger -TaskName $taskName -Description "Task to copy log files to GCP every hour"
+
+Write-Host "Scheduled task created successfully. Task will run every hour."
