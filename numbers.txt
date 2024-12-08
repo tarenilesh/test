@@ -240,4 +240,37 @@ Replace([Script], "{{PLACEHOLDER}}", "DynamicValue")
           Script Errors:
           {{ script_output.stderr }}
 
+#### ansible task to wait till script complete 
 
+
+---
+- name: Execute PowerShell script and wait for completion
+  hosts: windows
+  gather_facts: no
+  tasks:
+    - name: Run PowerShell script
+      win_shell: |
+        powershell.exe -NoProfile -ExecutionPolicy Bypass -File "C:/install/test.ps1"
+      register: script_output
+
+    - name: Wait for script to complete
+      win_shell: |
+        powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "
+        do {
+          Start-Sleep -Seconds 5
+          # Check for script completion logic here, e.g., a flag file or process state
+          $completed = Test-Path -Path 'C:/install/script_completed.flag'
+        } until ($completed)
+        Write-Output 'Script completed.'
+        "
+      register: wait_output
+
+    - name: Display script execution output
+      debug:
+        msg: |
+          Script Output:
+          {{ script_output.stdout }}
+          Script Errors:
+          {{ script_output.stderr }}
+          Wait Output:
+          {{ wait_output.stdout }}
