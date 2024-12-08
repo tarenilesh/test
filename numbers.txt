@@ -203,4 +203,23 @@ Write-Host "Virtual environment deactivated."
 
 Replace([Script], "{{PLACEHOLDER}}", "DynamicValue")
 
+- name: Copy multiple folders from GCP bucket
+  hosts: localhost
+  gather_facts: no
+  vars:
+    folders_to_copy:
+      - folder1/
+      - folder2/
+  tasks:
+    - name: Copy folders dynamically
+      google.cloud.gcp_storage_object:
+        bucket: your-source-bucket
+        dest: /local/path/{{ item }}/
+        source_objects:
+          - name: "{{ item }}"
+        auth_kind: serviceaccount
+        service_account_file: /path/to/your-service-account.json
+        mode: download
+      loop: "{{ folders_to_copy }}"
+
 
