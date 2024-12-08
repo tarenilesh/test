@@ -222,4 +222,22 @@ Replace([Script], "{{PLACEHOLDER}}", "DynamicValue")
         mode: download
       loop: "{{ folders_to_copy }}"
 
+---
+- name: Execute PowerShell script and display output
+  hosts: windows
+  gather_facts: no
+  tasks:
+    - name: Run PowerShell script
+      win_shell: |
+        powershell.exe -NoProfile -ExecutionPolicy Bypass -File "C:/install/test.ps1"
+      register: script_output
+
+    - name: Display script output
+      debug:
+        msg: |
+          Script Output:
+          {{ script_output.stdout }}
+          Script Errors:
+          {{ script_output.stderr }}
+
 
