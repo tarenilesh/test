@@ -516,3 +516,15 @@ $taskTrigger.RepetitionDuration = [TimeSpan]::MaxValue      # Repeat indefinitel
 Register-ScheduledTask -Action $taskAction -Trigger $taskTrigger -TaskName $taskName -Description "Task to copy log files to GCP every hour"
 
 Write-Host "Scheduled task created successfully. Task will run every hour."
+
+
+
+SELECT 
+    CONCAT(
+        "CREATE TABLE `TARGET_PROJECT_ID.TARGET_DATASET_ID.", 
+        table_name, 
+        "` AS SELECT * FROM `SOURCE_PROJECT_ID.SOURCE_DATASET_ID.", 
+        table_name, 
+        "` WHERE FALSE;"
+    ) AS ddl
+FROM `SOURCE_PROJECT_ID.SOURCE_DATASET_ID.INFORMATION_SCHEMA.TABLES`;
