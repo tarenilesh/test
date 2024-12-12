@@ -531,3 +531,8 @@ FROM `SOURCE_PROJECT_ID.SOURCE_DATASET_ID.INFORMATION_SCHEMA.TABLES`;
 
 
 Start-Process -FilePath "C:\Program Files\Git\git-cmd.exe" -ArgumentList "--cd='C:\path\to\repository' git pull" -NoNewWindow -Wait
+
+
+CREATE TABLE `target_project.target_dataset.target_table` AS
+SELECT *
+FROM `source_project.source_dataset.source_table`;
