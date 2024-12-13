@@ -550,3 +550,8 @@ FROM FILES (
     uris = ['gs://your-bucket-name/your_file.csv'],
     skip_leading_rows = 1
 );
+# Directly add Git path to the current session's PATH variable
+$env:Path += ";C:\Program Files\Git\bin"
+
+# Verify Git is accessible
+git --version
