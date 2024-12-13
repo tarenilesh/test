@@ -536,3 +536,9 @@ Start-Process -FilePath "C:\Program Files\Git\git-cmd.exe" -ArgumentList "--cd='
 CREATE TABLE `target_project.target_dataset.target_table` AS
 SELECT *
 FROM `source_project.source_dataset.source_table`;
+
+Start-Transcript -Path "C:\Temp\script_log.txt"
+# Your script logic here
+Stop-Transcript
+
+-ExecutionPolicy Bypass -File "C:\Scripts\my_script.ps1" -InputFile "C:\Temp\input.csv" -OutputFile "C:\Temp\output.csv"
