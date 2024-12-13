@@ -542,3 +542,11 @@ Start-Transcript -Path "C:\Temp\script_log.txt"
 Stop-Transcript
 
 -ExecutionPolicy Bypass -File "C:\Scripts\my_script.ps1" -InputFile "C:\Temp\input.csv" -OutputFile "C:\Temp\output.csv"
+
+
+LOAD DATA INTO `PROJECT_ID.DATASET_ID.TABLE_NAME`
+FROM FILES (
+    format = 'CSV',
+    uris = ['gs://your-bucket-name/your_file.csv'],
+    skip_leading_rows = 1
+);
