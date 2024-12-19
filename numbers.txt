@@ -555,3 +555,7 @@ $env:Path += ";C:\Program Files\Git\bin"
 
 # Verify Git is accessible
 git --version
+
+gcloud bigquery tables add-iam-policy-binding PROJECT_ID:DATASET_ID.TABLE_ID \
+  --member="user:USER_EMAIL" \
+  --role="roles/bigquery.dataViewer"
