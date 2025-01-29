@@ -562,3 +562,11 @@ gcloud bigquery tables add-iam-policy-binding PROJECT_ID:DATASET_ID.TABLE_ID \
 
 
 $ServiceName = "Stackdriver"; Stop-Service -Name $ServiceName -Force -ErrorAction SilentlyContinue; while ((Get-Service -Name $ServiceName).Status -ne "Stopped") { Start-Sleep -Seconds 1 }; Write-Host "$ServiceName service has stopped successfully."
+
+
+SELECT 
+  table_name, 
+  ddl 
+FROM 
+  `your-project-id`.`mydataset`.INFORMATION_SCHEMA.TABLES;
+
