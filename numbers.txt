@@ -570,3 +570,54 @@ SELECT
 FROM 
   `your-project-id`.`mydataset`.INFORMATION_SCHEMA.TABLES;
 
+
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: rabbitmq
+spec:
+  serviceName: rabbitmq
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rabbitmq
+  template:
+    metadata:
+      labels:
+        app: rabbitmq
+    spec:
+      securityContext:
+        runAsUser: 45
+        runAsGroup: 45
+        fsGroup: 45  # Ensures mounted volumes get the correct group ownership
+      initContainers:
+        - name: fix-permissions
+          image: busybox
+          command: ["sh", "-c", "chown -R 45:45 /etc/rabbitmq"]
+          volumeMounts:
+            - name: config-volume
+              mountPath: /etc/rabbitmq
+      containers:
+        - name: rabbitmq
+          image: rabbitmq:3.12-management  # Change to your required version
+          ports:
+            - containerPort: 5672  # AMQP
+            - containerPort: 15672 # Management UI
+          volumeMounts:
+            - name: config-volume
+              mountPath: /etc/rabbitmq
+      volumes:
+        - name: config-volume
+          persistentVolumeClaim:
+            claimName: rabbitmq-config-pvc
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: rabbitmq-config-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
