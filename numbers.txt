@@ -771,5 +771,38 @@ kubectl logs -n ingress-nginx -l app.kubernetes.io/name=ingress-nginx -f
 5. Access RabbitMQ
 Management UI: http://rabbitmq.example.com
 AMQP (5672): Connect your RabbitMQ clients to the NGINX Ingress External IP on port 5672.
+################
+
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: rabbitmq
+spec:
+  serviceName: rabbitmq
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rabbitmq
+  template:
+    metadata:
+      labels:
+        app: rabbitmq
+    spec:
+      containers:
+      - name: rabbitmq
+        image: rabbitmq:3.9-management  # Use management-enabled image
+        command: ["/bin/sh", "-c"]
+        args:
+          - "rabbitmq-plugins enable rabbitmq_management && rabbitmq-server"
+        ports:
+          - name: amqp
+            containerPort: 5672
+          - name: management
+            containerPort: 15672
+        env:
+          - name: RABBITMQ_DEFAULT_USER
+            value: "guest"
+          - name: RABBITMQ_DEFAULT_PASS
+            value: "guest"
 
 
