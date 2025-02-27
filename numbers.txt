@@ -804,5 +804,341 @@ spec:
             value: "guest"
           - name: RABBITMQ_DEFAULT_PASS
             value: "guest"
+##########################################
+how to forward tcp port 5672 from rabbitmq pod using service and ingress , share example with service and ingress rule
+ChatGPT said:
+To expose TCP port 5672 (used by RabbitMQ) from a Kubernetes pod using a Service and an Ingress, follow these steps:
+
+1. Create a Service
+Define a Service of type ClusterIP (default) or NodePort if needed. Since Ingress controllers generally do not support TCP directly, we will configure an Ingress resource accordingly.
+
+yaml
+Copy
+Edit
+apiVersion: v1
+kind: Service
+metadata:
+  name: rabbitmq-service
+  namespace: default
+spec:
+  selector:
+    app: rabbitmq
+  ports:
+    - name: amqp
+      protocol: TCP
+      port: 5672   # Service port
+      targetPort: 5672  # Pod port
+  type: ClusterIP  # Can be NodePort if required
+2. Configure Ingress to Forward TCP Traffic
+Most standard Ingress controllers (like NGINX) do not support raw TCP forwarding by default. However, you can configure NGINX Ingress to handle TCP forwarding using a ConfigMap.
+
+Step 1: Configure NGINX Ingress Controller to Support TCP
+Create a ConfigMap in the ingress-nginx namespace (or wherever your Ingress controller is deployed):
+
+yaml
+Copy
+Edit
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tcp-services
+  namespace: ingress-nginx
+data:
+  "5672": "default/rabbitmq-service:5672"
+Step 2: Update the Ingress Controller Deployment
+Ensure your NGINX Ingress controller is started with the following argument to load TCP services:
+
+yaml
+Copy
+Edit
+- --tcp-services-configmap=ingress-nginx/tcp-services
+If you are using Helm, you can set this value in values.yaml:
+
+yaml
+Copy
+Edit
+controller:
+  extraArgs:
+    tcp-services-configmap: "ingress-nginx/tcp-services"
+Step 3: Apply an Ingress Resource (for HTTP-based access)
+If you need to expose the RabbitMQ Management UI (port 15672), you can create an Ingress:
+
+yaml
+Copy
+Edit
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: rabbitmq-ingress
+  namespace: default
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  rules:
+    - host: rabbitmq.example.com  # Change this to your domain
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: rabbitmq-service
+                port:
+                  number: 15672  # RabbitMQ Management UI
+Summary
+Use a Service to expose the RabbitMQ pod.
+Use a ConfigMap to enable TCP forwarding in the NGINX Ingress controller.
+Configure the Ingress controller to use the ConfigMap.
+Create an Ingress for HTTP-based services (like the management UI on port 15672).
+Would you like help with Helm-based deployment or troubleshooting? 🚀
+
+
+
+
+
+
+
+You said:
+run rabbitmq image as nonroot user and start all plugins in gke deployment 
+ChatGPT said:
+To run the RabbitMQ container as a non-root user and enable all plugins in a Google Kubernetes Engine (GKE) Deployment, follow these steps:
+
+1. Create a SecurityContext for Non-Root Execution
+RabbitMQ's official Docker image runs as the rabbitmq user by default (uid=999). Ensure that the securityContext in your Deployment is configured correctly.
+
+2. Enable All Plugins
+RabbitMQ plugins can be enabled using RABBITMQ_ENABLED_PLUGINS_FILE or rabbitmq-plugins enable --offline <plugin-name>. We'll enable all plugins.
+
+Kubernetes Deployment YAML
+yaml
+Copy
+Edit
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rabbitmq
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rabbitmq
+  template:
+    metadata:
+      labels:
+        app: rabbitmq
+    spec:
+      securityContext:
+        runAsUser: 999  # RabbitMQ default user
+        runAsGroup: 999
+        fsGroup: 999  # Ensures correct permissions on mounted volumes
+      containers:
+        - name: rabbitmq
+          image: rabbitmq:3.12-management  # Includes Management UI
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false  # Set to true if using an init container
+            capabilities:
+              drop:
+                - ALL
+          ports:
+            - containerPort: 5672  # AMQP
+            - containerPort: 15672 # Management UI
+          env:
+            - name: RABBITMQ_DEFAULT_USER
+              value: "admin"
+            - name: RABBITMQ_DEFAULT_PASS
+              value: "admin"
+            - name: RABBITMQ_ENABLED_PLUGINS_FILE
+              value: "/etc/rabbitmq/enabled_plugins"  # Loads plugins from file
+          volumeMounts:
+            - name: enabled-plugins
+              mountPath: /etc/rabbitmq/enabled_plugins
+              subPath: enabled_plugins
+      volumes:
+        - name: enabled-plugins
+          configMap:
+            name: rabbitmq-plugins
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rabbitmq-plugins
+  namespace: default
+data:
+  enabled_plugins: |
+    [rabbitmq_management, rabbitmq_federation, rabbitmq_federation_management, rabbitmq_shovel, rabbitmq_shovel_management, rabbitmq_auth_backend_ldap, rabbitmq_auth_mechanism_ssl, rabbitmq_web_mqtt, rabbitmq_web_stomp, rabbitmq_amqp1_0, rabbitmq_mqtt, rabbitmq_stomp, rabbitmq_top].  
+Key Features of This Setup
+Runs RabbitMQ as Non-Root (uid=999)
+Uses securityContext to prevent privilege escalation
+Mounts a ConfigMap with a list of enabled plugins
+Supports both AMQP (5672) and Management UI (15672)
+Optional: Expose RabbitMQ Using a Service
+yaml
+Copy
+Edit
+apiVersion: v1
+kind: Service
+metadata:
+  name: rabbitmq-service
+  namespace: default
+spec:
+  selector:
+    app: rabbitmq
+  ports:
+    - name: amqp
+      port: 5672
+      targetPort: 5672
+    - name: management
+      port: 15672
+      targetPort: 15672
+  type: ClusterIP
+Verify Deployment
+Check pod security settings
+sh
+Copy
+Edit
+kubectl get pods -n default
+kubectl describe pod <POD_NAME>
+Verify RabbitMQ Plugins
+sh
+Copy
+Edit
+kubectl exec -it <POD_NAME> -- rabbitmq-plugins list
+Access Management UI
+Forward port:
+sh
+Copy
+Edit
+kubectl port-forward svc/rabbitmq-service 15672:15672
+Open: http://localhost:15672
+################################################
+
+create react docker image and also config npmrc for image to installl pkgs from private nexus registery 
+ChatGPT said:
+Here’s how you can create a React Docker image and configure .npmrc to install packages from a private Nexus registry.
+
+1. Create a .npmrc File for Nexus Registry
+Inside your React project root (/app in the container), create a .npmrc file with the following content:
+
+ini
+Copy
+Edit
+registry=https://nexus.example.com/repository/npm-private/
+//nexus.example.com/repository/npm-private/:_authToken=${NPM_TOKEN}
+always-auth=true
+Replace https://nexus.example.com/repository/npm-private/ with your actual Nexus registry URL.
+
+2. Create a Dockerfile for React App
+This Dockerfile will:
+
+Use Node.js as the base image
+Copy the .npmrc file for private registry access
+Install dependencies and build the app
+Use NGINX to serve the production React build
+dockerfile
+Copy
+Edit
+# Use an official Node.js runtime as a build stage
+FROM node:18 AS build
+
+# Set working directory
+WORKDIR /app
+
+# Copy package.json and package-lock.json (if exists)
+COPY package*.json .npmrc ./
+
+# Use environment variable for Nexus authentication
+ARG NPM_TOKEN
+ENV NPM_TOKEN=${NPM_TOKEN}
+
+# Install dependencies
+RUN npm install --legacy-peer-deps
+
+# Copy the rest of the application
+COPY . .
+
+# Build the React app
+RUN npm run build
+
+# Use a lightweight NGINX image for serving the built React app
+FROM nginx:alpine
+
+# Copy the React build output to the NGINX HTML directory
+COPY --from=build /app/build /usr/share/nginx/html
+
+# Expose port 80 for HTTP traffic
+EXPOSE 80
+
+# Start NGINX
+CMD ["nginx", "-g", "daemon off;"]
+3. Build and Run the Docker Image
+Build the Image
+Run the following command, replacing YOUR_NPM_TOKEN with your actual token:
+
+sh
+Copy
+Edit
+docker build --build-arg NPM_TOKEN=YOUR_NPM_TOKEN -t my-react-app .
+Run the Container
+sh
+Copy
+Edit
+docker run -p 3000:80 my-react-app
+Now, your React app should be accessible at http://localhost:3000.
+
+4. Store the Image in Docker Registry (Optional)
+If you want to push the image to Docker Hub or a private registry:
+
+sh
+Copy
+Edit
+docker tag my-react-app my-registry.com/my-react-app:latest
+docker push my-registry.com/my-react-app:latest
+5. Kubernetes Deployment with Secret for NPM Token
+If deploying to Kubernetes, use a Kubernetes Secret for NPM_TOKEN:
+
+sh
+Copy
+Edit
+kubectl create secret generic npm-token --from-literal=NPM_TOKEN=YOUR_NPM_TOKEN
+Then, update the Deployment YAML to inject the token:
+
+yaml
+Copy
+Edit
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: react-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: react-app
+  template:
+    metadata:
+      labels:
+        app: react-app
+    spec:
+      containers:
+        - name: react-app
+          image: my-registry.com/my-react-app:latest
+          ports:
+            - containerPort: 80
+          env:
+            - name: NPM_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: npm-token
+                  key: NPM_TOKEN
+
+
+
+
+
+
+
+
 
 
