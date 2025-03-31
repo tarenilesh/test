@@ -1162,6 +1162,35 @@ services:
 
 
 
+from celery import Celery
+import ssl
+from kombu import Connection
 
+# Create SSL context
+ssl_context = ssl.create_default_context(cafile='path/to/your/ca_cert.pem')
+
+# Set up the broker URL with your RabbitMQ credentials
+broker_url = 'amqps://username:password@hostname:port/vhost'
+
+# Create the Celery app
+app = Celery('tasks', broker=broker_url)
+
+# Function to send message to the queue
+@app.task
+def send_message(message):
+    # The task to send the message to the queue
+    print(f"Sending message: {message}")
+    # You can perform the task here or just use Celery beat to schedule it
+
+# Example of sending a message
+@app.on_after_configure.connect
+def setup_periodic_tasks(sender, **kwargs):
+    # Sending a test message when the worker starts
+    message = "Hello, RabbitMQ!"
+    send_message.delay(message)  # Use delay() to send message asynchronously
+
+# You can also manually call send_message from somewhere else in your code
+if __name__ == '__main__':
+    app.start()
 
 
